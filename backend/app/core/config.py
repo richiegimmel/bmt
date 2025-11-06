@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
+import json
 
 
 class Settings(BaseSettings):
@@ -30,13 +31,23 @@ class Settings(BaseSettings):
     allowed_extensions: list[str] = [".pdf", ".docx", ".xlsx", ".xls", ".doc"]
 
     # CORS
-    cors_origins: list[str] = ["http://localhost:3000"]
+    cors_origins: list[str] | str = ["http://localhost:3000"]
 
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False
     )
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        # Parse CORS_ORIGINS if it's a JSON string
+        if isinstance(self.cors_origins, str):
+            try:
+                self.cors_origins = json.loads(self.cors_origins)
+            except json.JSONDecodeError:
+                # If not valid JSON, treat as single origin
+                self.cors_origins = [self.cors_origins]
 
 
 settings = Settings()
