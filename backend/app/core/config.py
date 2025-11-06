@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     anthropic_api_key: str
     claude_model: str = "claude-sonnet-4-5-20250929"
 
+    # Voyage AI (for embeddings)
+    voyage_api_key: str
+    voyage_model: str = "voyage-law-2"
+
     # File Storage
     upload_dir: str = "./uploads"
     storage_dir: str = "./storage"

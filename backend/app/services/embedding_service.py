@@ -1,23 +1,24 @@
 from typing import List, Tuple, Optional
 import time
 from sqlalchemy.orm import Session
-from anthropic import Anthropic
+from voyageai import Client as VoyageClient
 
 from app.core.config import settings
 from app.models.document import DocumentChunk
 
 
 class EmbeddingService:
-    """Service for generating and managing vector embeddings using Claude"""
+    """Service for generating and managing vector embeddings using Voyage AI"""
 
     def __init__(self):
-        """Initialize Anthropic client"""
-        self.client = Anthropic(api_key=settings.anthropic_api_key)
-        self.model = "claude-3-5-sonnet-20241022"  # Claude model for embeddings
+        """Initialize Voyage AI client"""
+        self.client = VoyageClient(api_key=settings.voyage_api_key)
+        self.model = settings.voyage_model  # voyage-law-2
+        self.embedding_dimension = 1024  # voyage-law-2 uses 1024 dimensions
 
     def generate_embedding(self, text: str) -> Optional[List[float]]:
         """
-        Generate embedding vector for a single text
+        Generate embedding vector for a single text using Voyage AI
 
         Args:
             text: Text to embed
@@ -26,29 +27,60 @@ class EmbeddingService:
             Embedding vector (1024 dimensions) or None on error
         """
         try:
-            # Note: As of now, Anthropic doesn't have a dedicated embeddings API
-            # This is a placeholder for when they release one
-            # For now, we'll need to use an alternative approach or wait for the API
+            # Use Voyage AI to generate embeddings
+            result = self.client.embed(
+                texts=[text],
+                model=self.model,
+                input_type="document"  # Use "document" for document embeddings
+            )
 
-            # TODO: Replace with actual Anthropic embeddings API when available
-            # For now, we'll return None to indicate embeddings are not yet implemented
+            if result.embeddings and len(result.embeddings) > 0:
+                return result.embeddings[0]
+
             return None
 
         except Exception as e:
             print(f"Error generating embedding: {e}")
             return None
 
+    def generate_query_embedding(self, query: str) -> Optional[List[float]]:
+        """
+        Generate embedding vector for a search query using Voyage AI
+
+        Args:
+            query: Query text to embed
+
+        Returns:
+            Embedding vector (1024 dimensions) or None on error
+        """
+        try:
+            # Use "query" input type for search queries
+            result = self.client.embed(
+                texts=[query],
+                model=self.model,
+                input_type="query"  # Use "query" for search queries
+            )
+
+            if result.embeddings and len(result.embeddings) > 0:
+                return result.embeddings[0]
+
+            return None
+
+        except Exception as e:
+            print(f"Error generating query embedding: {e}")
+            return None
+
     def generate_embeddings_batch(
         self,
         texts: List[str],
-        batch_size: int = 10
+        batch_size: int = 128
     ) -> List[Optional[List[float]]]:
         """
         Generate embeddings for multiple texts in batches
 
         Args:
             texts: List of texts to embed
-            batch_size: Number of texts to process at once
+            batch_size: Number of texts to process at once (Voyage supports up to 128)
 
         Returns:
             List of embedding vectors (or None for failures)
@@ -58,12 +90,27 @@ class EmbeddingService:
         for i in range(0, len(texts), batch_size):
             batch = texts[i:i + batch_size]
 
-            for text in batch:
-                embedding = self.generate_embedding(text)
-                embeddings.append(embedding)
+            try:
+                # Batch embed with Voyage AI
+                result = self.client.embed(
+                    texts=batch,
+                    model=self.model,
+                    input_type="document"
+                )
 
-                # Rate limiting - small delay between requests
+                if result.embeddings:
+                    embeddings.extend(result.embeddings)
+                else:
+                    # If batch fails, add None for each text
+                    embeddings.extend([None] * len(batch))
+
+                # Rate limiting - small delay between batches
                 time.sleep(0.1)
+
+            except Exception as e:
+                print(f"Error in batch embedding: {e}")
+                # Add None for failed batch
+                embeddings.extend([None] * len(batch))
 
         return embeddings
 
@@ -125,6 +172,8 @@ class EmbeddingService:
         Returns:
             List of (chunk, similarity_score) tuples
         """
+        from sqlalchemy import text as sql_text
+
         # Build query for vector similarity search using pgvector
         # cosine distance: 1 - cosine_similarity, so lower is better
         # We'll convert to similarity score (higher is better) by: 1 - distance
@@ -137,13 +186,16 @@ class EmbeddingService:
         # Only search chunks that have embeddings
         query = query.filter(DocumentChunk.embedding.isnot(None))
 
-        # Use pgvector's cosine distance operator
-        # Note: This requires the pgvector extension and proper column type
-        # The actual implementation depends on having the pgvector operators available
+        # Use pgvector's cosine distance operator (<=>)
+        # We need to convert the embedding list to a pgvector format
+        embedding_str = '[' + ','.join(map(str, query_embedding)) + ']'
 
-        # For now, we'll fetch all and filter (not efficient, but works without embeddings)
-        # TODO: Replace with proper pgvector query when embeddings are implemented
-        all_chunks = query.limit(limit * 2).all()
+        # Order by cosine distance and limit results
+        query = query.order_by(
+            sql_text(f"embedding <=> '{embedding_str}'")
+        ).limit(limit * 2)  # Get more results to filter by min_score
+
+        all_chunks = query.all()
 
         results = []
         for chunk in all_chunks:

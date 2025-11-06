@@ -57,10 +57,10 @@ function DashboardContent() {
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-600">
-                Ask questions and get legal advice
+                Ask questions and get legal advice with document retrieval
               </p>
-              <Button className="mt-4" disabled>
-                Coming Soon
+              <Button className="mt-4" onClick={() => window.location.href = '/chat'}>
+                Go to Chat
               </Button>
             </CardContent>
           </Card>
