@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Boolean, JSON
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Boolean, JSON, text
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -12,8 +12,8 @@ class ChatSession(Base):
     title = Column(String, nullable=False, default="New Conversation")
 
     # Timestamps
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=text('now()'))
+    updated_at = Column(DateTime(timezone=True), server_default=text('now()'), onupdate=func.now())
 
     # Relationships
     user = relationship("User", back_populates="chat_sessions")

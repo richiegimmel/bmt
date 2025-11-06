@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.core.database import get_db
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-security = HTTPBearer()
+security = HTTPBearer(auto_error=True)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

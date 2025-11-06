@@ -53,12 +53,17 @@ You have access to a document retrieval tool that allows you to search through u
         Returns:
             Created ChatSession
         """
+        from datetime import datetime
+
         if not title:
             title = "New Chat"
 
+        now = datetime.utcnow()
         session = ChatSession(
             user_id=user_id,
-            title=title
+            title=title,
+            created_at=now,
+            updated_at=now
         )
 
         db.add(session)

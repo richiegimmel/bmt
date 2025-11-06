@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Loader2, Send, Plus, Trash2, FileText } from 'lucide-react';
-import ProtectedRoute from '@/components/protected-route';
+import { ProtectedRoute } from '@/components/protected-route';
 
 function ChatPage() {
   const { user, getToken } = useAuth();
