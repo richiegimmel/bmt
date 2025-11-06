@@ -8,10 +8,18 @@ The Board Management Tool provides document organization, AI-powered legal assis
 
 ## Features
 
-- Document management for .docx, .pdf, and .xlsx files
+### ✅ Implemented (Phase 1-3)
+- **User Authentication** - JWT-based auth with refresh tokens
+- **Document Management** - Upload, organize, search, and download documents
+- **File Processing** - Extract text from PDF, DOCX, XLSX files
+- **OCR Support** - Automatic OCR for scanned/image-based PDFs
+- **Text Chunking** - Intelligent document chunking for embeddings
+- **Role-Based Access** - Admin and user roles with permissions
+- **Document Statistics** - Track uploads, processing status, and file types
+
+### 🚧 In Development (Phase 4)
 - AI chat interface with document retrieval and legal advice
 - Automated document generation
-- User authentication and basic RBAC
 - Vector-based document search with citations
 
 ## Tech Stack
@@ -41,6 +49,8 @@ The Board Management Tool provides document organization, AI-powered legal assis
 - Python 3.11 or higher
 - Node.js 18 or higher
 - PostgreSQL 14+ with pgvector extension
+- Tesseract OCR (for scanned PDF support)
+- Poppler (for PDF processing)
 - Anthropic API key for Claude
 
 ## Setup Instructions
@@ -48,6 +58,10 @@ The Board Management Tool provides document organization, AI-powered legal assis
 ### 1. Clone and Install Dependencies
 
 ```bash
+# Install system dependencies (Ubuntu/Debian)
+sudo apt-get update
+sudo apt-get install -y tesseract-ocr poppler-utils
+
 # Install backend dependencies
 cd backend
 python -m venv venv

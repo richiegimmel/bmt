@@ -34,4 +34,5 @@ export interface AuthContextType {
   register: (data: RegisterRequest) => Promise<void>;
   logout: () => void;
   refreshToken: () => Promise<void>;
+  getToken: () => string | null;
 }

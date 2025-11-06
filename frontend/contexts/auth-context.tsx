@@ -101,6 +101,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const getToken = () => {
+    return localStorage.getItem(TOKEN_KEY);
+  };
+
   const value: AuthContextType = {
     user,
     loading,
@@ -108,6 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     register,
     logout,
     refreshToken,
+    getToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

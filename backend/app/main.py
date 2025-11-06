@@ -38,12 +38,12 @@ async def health():
 
 
 # Import and include routers
-from app.api import auth, users
+from app.api import auth, users, documents
 
 app.include_router(auth.router, prefix=f"{settings.api_prefix}/auth", tags=["Authentication"])
 app.include_router(users.router, prefix=f"{settings.api_prefix}/users", tags=["Users"])
+app.include_router(documents.router, prefix=f"{settings.api_prefix}/documents", tags=["Documents"])
 
 # Future routers
-# from app.api import documents, chat
-# app.include_router(documents.router, prefix=f"{settings.api_prefix}/documents", tags=["Documents"])
+# from app.api import chat
 # app.include_router(chat.router, prefix=f"{settings.api_prefix}/chat", tags=["Chat"])

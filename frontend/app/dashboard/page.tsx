@@ -44,8 +44,8 @@ function DashboardContent() {
               <p className="text-sm text-gray-600">
                 Upload and organize documents for board meetings
               </p>
-              <Button className="mt-4" disabled>
-                Coming Soon
+              <Button className="mt-4" onClick={() => window.location.href = '/documents'}>
+                Go to Documents
               </Button>
             </CardContent>
           </Card>
