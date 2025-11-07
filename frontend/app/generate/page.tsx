@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { getTemplates, generateDocument, generateAndDownload } from '@/lib/api/document-generation';
 import type { TemplateInfo, GenerateDocumentRequest } from '@/types/document-generation';
-import ProtectedRoute from '@/components/protected-route';
+import { ProtectedRoute } from '@/components/protected-route';
 import { toast } from 'sonner';
 
 export default function GeneratePage() {
