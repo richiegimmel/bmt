@@ -150,13 +150,17 @@ async def stream_chat_message(
             detail="Chat session not found"
         )
 
-    return StreamingResponse(
-        chat_service.stream_chat_response(
+    async def generate():
+        async for chunk in chat_service.stream_chat_response(
             db=db,
             session_id=session_id,
             user_id=current_user.id,
             user_message=message_data.content
-        ),
+        ):
+            yield chunk
+
+    return StreamingResponse(
+        generate(),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

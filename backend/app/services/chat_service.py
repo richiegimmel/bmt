@@ -1,7 +1,8 @@
 from typing import List, Dict, Any, Optional, AsyncGenerator
 import json
+import asyncio
 from sqlalchemy.orm import Session
-from anthropic import Anthropic
+from anthropic import AsyncAnthropic
 from anthropic.types import MessageStreamEvent
 
 from app.core.config import settings
@@ -14,8 +15,8 @@ class ChatService:
     """Service for managing chat sessions and AI interactions"""
 
     def __init__(self):
-        """Initialize Anthropic client and embedding service"""
-        self.client = Anthropic(api_key=settings.anthropic_api_key)
+        """Initialize Anthropic async client and embedding service"""
+        self.client = AsyncAnthropic(api_key=settings.anthropic_api_key)
         self.model = settings.claude_model
         self.embedding_service = EmbeddingService()
 
@@ -211,7 +212,7 @@ You have access to a document retrieval tool that allows you to search through u
             db=db,
             query_embedding=query_embedding,
             limit=limit,
-            min_score=0.65  # Lower threshold for legal documents
+            min_score=0.5  # Lower threshold for legal documents (0.5 allows more relevant results)
         )
 
         # Format results with document metadata
@@ -267,6 +268,9 @@ You have access to a document retrieval tool that allows you to search through u
         )
         db.add(user_msg)
         db.commit()
+        
+        # Yield control to allow other async operations
+        await asyncio.sleep(0)
 
         # Retrieve relevant documents
         relevant_docs = self.retrieve_relevant_documents(db, user_message, limit=5)
@@ -289,7 +293,7 @@ You have access to a document retrieval tool that allows you to search through u
                     "document_title": doc["document_title"],
                     "chunk_index": doc["chunk_id"],
                     "page_number": doc["page_number"],
-                    "relevance_score": doc["relevance_score"]
+                    "relevance_score": float(doc["relevance_score"])  # Convert numpy float32 to Python float
                 })
 
         # Get message history
@@ -322,38 +326,57 @@ You have access to a document retrieval tool that allows you to search through u
                 for citation in citations:
                     yield f"data: {json.dumps({'type': 'citation', 'citation': citation})}\n\n"
 
-            # Stream the AI response
-            with self.client.messages.stream(
-                model=self.model,
-                max_tokens=4096,
-                system=self.system_prompt,
-                messages=conversation
-            ) as stream:
-                for event in stream:
-                    if event.type == "content_block_delta":
-                        if hasattr(event.delta, "text"):
-                            chunk = event.delta.text
-                            assistant_content += chunk
-                            yield f"data: {json.dumps({'type': 'content', 'content': chunk})}\n\n"
+            # Stream the AI response using async client
+            try:
+                async with self.client.messages.stream(
+                    model=self.model,
+                    max_tokens=4096,
+                    system=self.system_prompt,
+                    messages=conversation
+                ) as stream:
+                    async for event in stream:
+                        if event.type == "content_block_delta":
+                            # Handle text delta - yield immediately for real-time streaming
+                            if hasattr(event.delta, "text"):
+                                chunk = event.delta.text
+                                assistant_content += chunk
+                                yield f"data: {json.dumps({'type': 'content', 'content': chunk})}\n\n"
+                        elif event.type == "message_stop":
+                            # Stream completed
+                            break
+            except Exception as stream_error:
+                error_msg = f"Error during streaming: {str(stream_error)}"
+                import traceback
+                traceback.print_exc()  # Log the full error
+                yield f"data: {json.dumps({'type': 'error', 'error': error_msg})}\n\n"
+                return
 
             # Save assistant message
-            assistant_msg = ChatMessage(
-                session_id=session_id,
-                role="assistant",
-                content=assistant_content,
-                citations=citations if citations else None
-            )
-            db.add(assistant_msg)
+            try:
+                assistant_msg = ChatMessage(
+                    session_id=session_id,
+                    role="assistant",
+                    content=assistant_content,
+                    citations=citations if citations else None
+                )
+                db.add(assistant_msg)
 
-            # Update session timestamp
-            session.updated_at = assistant_msg.created_at
-            db.commit()
+                # Update session timestamp
+                session.updated_at = assistant_msg.created_at
+                db.commit()
+            except Exception as db_error:
+                # Log but don't fail the stream if DB save fails
+                import traceback
+                traceback.print_exc()
+                yield f"data: {json.dumps({'type': 'error', 'error': f'Failed to save message: {str(db_error)}'})}\n\n"
 
             # Send completion event
             yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
         except Exception as e:
             error_msg = f"Error generating response: {str(e)}"
+            import traceback
+            traceback.print_exc()  # Log the full error
             yield f"data: {json.dumps({'type': 'error', 'error': error_msg})}\n\n"
 
     async def generate_non_streaming_response(
@@ -409,7 +432,7 @@ You have access to a document retrieval tool that allows you to search through u
                     "document_title": doc["document_title"],
                     "chunk_index": doc["chunk_id"],
                     "page_number": doc["page_number"],
-                    "relevance_score": doc["relevance_score"]
+                    "relevance_score": float(doc["relevance_score"])  # Convert numpy float32 to Python float
                 })
 
         # Get message history
@@ -435,7 +458,7 @@ You have access to a document retrieval tool that allows you to search through u
 
         # Get response from Claude
         try:
-            response = self.client.messages.create(
+            response = await self.client.messages.create(
                 model=self.model,
                 max_tokens=4096,
                 system=self.system_prompt,

@@ -199,7 +199,7 @@ class EmbeddingService:
 
         results = []
         for chunk in all_chunks:
-            if chunk.embedding:
+            if chunk.embedding is not None:
                 # Calculate cosine similarity
                 similarity = self._cosine_similarity(query_embedding, chunk.embedding)
                 if similarity >= min_score:

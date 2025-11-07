@@ -129,6 +129,10 @@ function ChatPage() {
         throw new Error('No authentication token');
       }
 
+      // Track accumulated content locally to avoid state timing issues
+      let accumulatedContent = '';
+      let accumulatedCitations: Citation[] = [];
+
       // Stream the response
       for await (const chunk of chatApi.streamMessage(
         currentSession.id,
@@ -136,17 +140,19 @@ function ChatPage() {
         token
       )) {
         if (chunk.type === 'content' && chunk.content) {
-          setStreamingMessage(prev => prev + chunk.content);
+          accumulatedContent += chunk.content;
+          setStreamingMessage(accumulatedContent);
         } else if (chunk.type === 'citation' && chunk.citation) {
-          setStreamingCitations(prev => [...prev, chunk.citation!]);
+          accumulatedCitations.push(chunk.citation);
+          setStreamingCitations(accumulatedCitations);
         } else if (chunk.type === 'done') {
-          // Finalize the streaming message
+          // Finalize the streaming message with accumulated content
           const assistantMessage: ChatMessage = {
             id: Date.now() + 1,
             session_id: currentSession.id,
             role: 'assistant',
-            content: streamingMessage,
-            citations: streamingCitations.length > 0 ? streamingCitations : undefined,
+            content: accumulatedContent,
+            citations: accumulatedCitations.length > 0 ? accumulatedCitations : undefined,
             created_at: new Date().toISOString(),
           };
           setMessages(prev => [...prev, assistantMessage]);
