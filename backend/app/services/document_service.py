@@ -102,6 +102,28 @@ class DocumentService:
             f.write(file_content)
 
     @staticmethod
+    def _save_file(file_content: bytes, filename: str, original_filename: str) -> str:
+        """
+        Save file with generated path (used for document generation).
+
+        Args:
+            file_content: File content as bytes
+            filename: Filename to use
+            original_filename: Original filename for extension detection
+
+        Returns:
+            Generated file path
+        """
+        file_path, _, _ = DocumentService.generate_file_path(original_filename)
+        # Use the provided filename instead of generated one
+        file_path = os.path.join(
+            os.path.dirname(file_path),
+            filename
+        )
+        DocumentService.save_upload_file(file_content, file_path)
+        return file_path
+
+    @staticmethod
     def delete_file(file_path: str) -> bool:
         """
         Delete file from disk

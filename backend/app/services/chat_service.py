@@ -9,16 +9,18 @@ from app.core.config import settings
 from app.models.chat import ChatSession, ChatMessage
 from app.models.document import Document
 from app.services.embedding_service import EmbeddingService
+from app.services.web_search import WebSearchService
 
 
 class ChatService:
     """Service for managing chat sessions and AI interactions"""
 
     def __init__(self):
-        """Initialize Anthropic async client and embedding service"""
+        """Initialize Anthropic async client, embedding service, and web search"""
         self.client = AsyncAnthropic(api_key=settings.anthropic_api_key)
         self.model = settings.claude_model
         self.embedding_service = EmbeddingService()
+        self.web_search = WebSearchService()
 
         # System prompt for the legal assistant
         self.system_prompt = """You are a professional legal assistant specialized in Kentucky law and board governance. Your role is to:
@@ -35,7 +37,11 @@ When responding:
 - Suggest when a user should consult with a licensed attorney for specific legal advice
 - Format your responses clearly with headings, bullet points, and sections as appropriate
 
-You have access to a document retrieval tool that allows you to search through uploaded legal documents, policies, and reference materials."""
+You have access to:
+1. A document retrieval tool that searches through uploaded legal documents, policies, and reference materials
+2. Web search capability for finding current Kentucky statutes and legal information from official sources (lrc.ky.gov, legislature.ky.gov)
+
+When web search results are provided, they will be clearly marked. Always indicate which information comes from uploaded documents vs. web sources."""
 
     def create_session(
         self,
@@ -184,6 +190,27 @@ You have access to a document retrieval tool that allows you to search through u
             ChatMessage.session_id == session_id
         ).order_by(ChatMessage.created_at).all()
 
+    def should_use_web_search(self, query: str) -> bool:
+        """
+        Determine if web search should be used based on query content.
+
+        Args:
+            query: User's query
+
+        Returns:
+            True if web search is likely helpful
+        """
+        # Keywords that suggest statute lookup or current law research
+        web_search_keywords = [
+            'kentucky statute', 'krs', 'k.r.s', 'kentucky revised statute',
+            'kentucky law', 'ky statute', 'kentucky regulation',
+            'kentucky code', 'statute number', 'current law',
+            'recent law', 'updated statute', 'amended'
+        ]
+
+        query_lower = query.lower()
+        return any(keyword in query_lower for keyword in web_search_keywords)
+
     def retrieve_relevant_documents(
         self,
         db: Session,
@@ -275,12 +302,24 @@ You have access to a document retrieval tool that allows you to search through u
         # Retrieve relevant documents
         relevant_docs = self.retrieve_relevant_documents(db, user_message, limit=5)
 
+        # Check if we should use web search
+        use_web_search = self.should_use_web_search(user_message)
+
+        # Perform web search if appropriate
+        web_results = []
+        if use_web_search:
+            try:
+                web_results = await self.web_search.search_kentucky_statutes(user_message, limit=3)
+            except Exception as e:
+                print(f"Web search error: {e}")
+                # Continue without web results
+
         # Build context from retrieved documents
         context = ""
         citations = []
 
         if relevant_docs:
-            context = "\n\n# Relevant Documents\n\n"
+            context = "\n\n# Relevant Documents from Library\n\n"
             for i, doc in enumerate(relevant_docs, 1):
                 context += f"[Document {i}] {doc['document_title']}"
                 if doc['page_number']:
@@ -295,6 +334,12 @@ You have access to a document retrieval tool that allows you to search through u
                     "page_number": doc["page_number"],
                     "relevance_score": float(doc["relevance_score"])  # Convert numpy float32 to Python float
                 })
+
+        # Add web search results to context
+        if web_results:
+            context += "\n\n# Web Search Results (Kentucky Statutes)\n\n"
+            context += self.web_search.format_search_results_for_context(web_results)
+            context += "\nNote: Please verify web search results and always cite the source URL when referencing these materials.\n"
 
         # Get message history
         messages = self.get_messages(db, session_id, user_id)

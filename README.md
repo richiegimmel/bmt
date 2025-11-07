@@ -8,7 +8,7 @@ The Board Management Tool provides document organization, AI-powered legal assis
 
 ## Features
 
-### ✅ Implemented (Phase 1-3)
+### ✅ Implemented (Phase 1-4)
 - **User Authentication** - JWT-based auth with refresh tokens
 - **Document Management** - Upload, organize, search, and download documents
 - **File Processing** - Extract text from PDF, DOCX, XLSX files
@@ -16,11 +16,14 @@ The Board Management Tool provides document organization, AI-powered legal assis
 - **Text Chunking** - Intelligent document chunking for embeddings
 - **Role-Based Access** - Admin and user roles with permissions
 - **Document Statistics** - Track uploads, processing status, and file types
+- **AI Chat Interface** - Streaming chat with Claude Sonnet 4.5
+- **Document Retrieval (RAG)** - Semantic search with citations using Voyage AI
+- **Vector Search** - Legal-specialized embeddings (voyage-law-2, 1024 dimensions)
+- **Citation Tracking** - Source attribution with relevance scores
 
-### 🚧 In Development (Phase 4)
-- AI chat interface with document retrieval and legal advice
-- Automated document generation
-- Vector-based document search with citations
+### ❌ Not Yet Implemented
+- **Automated Document Generation** - Template-based creation of board resolutions, minutes, notices
+- **Web Search Integration** - Real-time lookup of Kentucky statutes
 
 ## Tech Stack
 
@@ -33,9 +36,10 @@ The Board Management Tool provides document organization, AI-powered legal assis
 - Lucide Icons
 
 ### Backend
-- FastAPI (Python 3.11+)
-- PostgreSQL with pgvector
-- Claude Agent SDK (Python)
+- FastAPI (Python 3.12)
+- PostgreSQL 16 with pgvector 0.8.0
+- Anthropic Claude (Sonnet 4.5)
+- Voyage AI (voyage-law-2 embeddings)
 - JWT Authentication
 - Alembic (migrations)
 
@@ -48,10 +52,11 @@ The Board Management Tool provides document organization, AI-powered legal assis
 
 - Python 3.11 or higher
 - Node.js 18 or higher
-- PostgreSQL 14+ with pgvector extension
+- PostgreSQL 16+ with pgvector extension
 - Tesseract OCR (for scanned PDF support)
 - Poppler (for PDF processing)
 - Anthropic API key for Claude
+- Voyage AI API key for embeddings
 
 ## Setup Instructions
 

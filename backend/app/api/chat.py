@@ -14,10 +14,10 @@ from app.schemas.chat import (
     ChatMessageResponse,
     ChatMessageListResponse,
 )
-from app.services.chat_service import ChatService
+from app.services.chat_service_sdk import ChatServiceSDK
 
 router = APIRouter()
-chat_service = ChatService()
+chat_service = ChatServiceSDK()
 
 
 @router.post("/sessions", response_model=ChatSessionResponse, status_code=status.HTTP_201_CREATED)
