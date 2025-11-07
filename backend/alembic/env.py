@@ -16,8 +16,13 @@ load_dotenv()
 from app.core.config import settings
 from app.core.database import Base
 from app.models.user import User
-from app.models.document import Document, DocumentChunk
+from app.models.document import Document, DocumentChunk, DocumentCategory, DocumentTag, DocumentVersion
 from app.models.chat import ChatSession, ChatMessage
+from app.models.meeting import Meeting, MeetingAttendee, MeetingDocument, AgendaItem
+from app.models.board import BoardMember, Committee, CommitteeMember, OfficerRole
+from app.models.resolution import Resolution, ResolutionVote, ActionItem
+from app.models.compliance import ComplianceItem, ComplianceHistory
+from app.models.notification import Notification
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

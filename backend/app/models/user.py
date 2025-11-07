@@ -20,3 +20,5 @@ class User(Base):
     # Relationships
     documents = relationship("Document", back_populates="owner")
     chat_sessions = relationship("ChatSession", back_populates="user")
+    board_member = relationship("BoardMember", back_populates="user", uselist=False)
+    notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")

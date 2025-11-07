@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/auth-context';
+import { AppShell } from '@/components/layout/app-shell';
 import { chatApi } from '@/lib/api/chat';
 import type { ChatSession, ChatMessage, Citation } from '@/types/chat';
 import { Button } from '@/components/ui/button';
@@ -184,9 +185,10 @@ function ChatPage() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar - Chat Sessions */}
-      <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
+    <AppShell breadcrumbs={[{ label: 'AI Assistant' }]}>
+      <div className="flex h-[calc(100vh-4rem)] bg-white">
+        {/* Sidebar - Chat Sessions */}
+        <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-4 border-b border-gray-200">
           <Button onClick={createNewSession} className="w-full">
             <Plus className="mr-2 h-4 w-4" />
@@ -370,7 +372,7 @@ function ChatPage() {
           </div>
         )}
       </div>
-    </div>
+    </AppShell>
   );
 }
 

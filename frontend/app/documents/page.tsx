@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { ProtectedRoute } from "@/components/protected-route";
+import { AppShell } from "@/components/layout/app-shell";
 import { documentsAPI } from "@/lib/api/documents";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
@@ -22,7 +23,7 @@ import {
 } from "lucide-react";
 
 function DocumentsContent() {
-  const { user, getToken } = useAuth();
+  const { getToken } = useAuth();
   const token = getToken();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [stats, setStats] = useState<DocumentStats | null>(null);
@@ -185,8 +186,8 @@ function DocumentsContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="container mx-auto px-4 max-w-7xl">
+    <AppShell breadcrumbs={[{ label: 'Documents' }]}>
+      <div className="container mx-auto px-4 max-w-7xl py-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Documents</h1>
@@ -408,7 +409,7 @@ function DocumentsContent() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </AppShell>
   );
 }
 
